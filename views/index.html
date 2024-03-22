@@ -1,0 +1,48 @@
+{{block "index" .}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talerliste</title>
+    <link href="css/style.css" rel="stylesheet" />
+    <script
+    src="https://unpkg.com/htmx.org@1.9.11"
+    integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+    crossorigin="anonymous"
+  ></script>
+  </head>
+  <body>
+    <div>
+      Deltakere: {{template "participants" .Participants}}
+    </div>
+    <div>
+      Innlegg: {{template "talks" .Talks}}
+    </div>
+  </body>
+</html>
+{{end}} 
+
+{{block "participants" .}} 
+{{range .}}
+<button hx-post="/talk/{{.Id}}" hx-target="#talks" hx-swap="beforeend">  
+  {{.Name}} 
+</button>
+{{end}} 
+{{end}}
+
+{{block "talks" .}}
+<div id="talks">
+  {{range .}}
+  {{template "talk" .}}
+  {{end}}
+</div>
+{{end}}
+
+{{block "talk" .}}
+<div id="talk-{{.Id}}">
+  {{.}}    
+  <button hx-delete="/talk/{{.Id}}" hx-target="#talk-{{.Id}}"  hx-swap="outerHTML">X</button>
+</div>
+{{end}}
+
