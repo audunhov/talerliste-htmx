@@ -107,6 +107,18 @@ func newMessage(message string) Message {
 	}
 }
 
+type TalkBlock struct {
+  Talk Talk
+  Participant Participant
+}
+
+func newTalkBlock(talk Talk, participant Participant) TalkBlock {
+  return TalkBlock{
+    Talk: talk,
+    Participant: participant,
+  }
+}
+
 func main() {
 
 	e := echo.New()
@@ -128,22 +140,14 @@ func main() {
 		}
 		talk := newTalk(id)
 
+    participant := page.Participants.getParticipantById(id)
+    block := newTalkBlock(talk, *participant)
+
 		page.Talks = append(page.Talks, talk)
 
-		return c.Render(http.StatusOK, "talk", talk)
+		return c.Render(http.StatusOK, "talk", block)
 	})
 
-	e.GET("/participant/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return c.String(http.StatusBadRequest, "Could not parse id")
-		}
-		part := page.Participants.getParticipantById(id)
-		if part == nil {
-			return c.String(http.StatusNotFound, "Participant not found")
-		}
-		return c.Render(http.StatusOK, "participant", part)
-	})
 
 	e.DELETE("/talk/:id", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))

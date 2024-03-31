@@ -14,10 +14,12 @@
   </head>
   <body>
     <div>
-      Deltakere: {{template "participants" .Participants}}
+      <h1>Deltakere:</h1>
+      {{template "participants" .Participants}}
     </div>
     <div>
-      Innlegg: {{template "talks" .Talks}}
+      <h1>Innlegg:</h1>
+      <div id="talks" />
     </div>
   </body>
 </html>
@@ -31,21 +33,11 @@
 {{end}} 
 {{end}}
 
-{{block "talks" .}}
-<div id="talks">
-  {{range .}}
-  {{template "talk" .}}
-  {{end}}
-</div>
-{{end}}
 
 {{block "talk" .}}
-<div id="talk-{{.Id}}">
-  <span hx-get="/participant/{{.Participant}}" hx-trigger="load" hx-swap="outerHTML"></span>
-  <button hx-delete="/talk/{{.Id}}" hx-target="#talk-{{.Id}}"  hx-swap="outerHTML">X</button>
+<div id="talk-{{.Talk.Id}}">
+  <span>{{.Participant.Name}}</span>
+  <button hx-delete="/talk/{{.Talk.Id}}" hx-target="#talk-{{.Talk.Id}}"  hx-swap="outerHTML">X</button>
 </div>
 {{end}}
 
-{{block "participant" .}}
-  {{.Name}}
-{{end}}
