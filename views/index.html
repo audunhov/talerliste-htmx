@@ -19,7 +19,9 @@
     </div>
     <div>
       <h1>Innlegg:</h1>
-      <div id="talks" />
+      <div id="talks" >
+        {{template "talks" .TalkBlocks}}
+      </div>
     </div>
   </body>
 </html>
@@ -31,6 +33,12 @@
   {{.Name}} 
 </button>
 {{end}} 
+{{end}}
+
+{{block "talks" .}}
+{{range .}}
+{{template "talk" .}}
+{{end}}
 {{end}}
 
 
