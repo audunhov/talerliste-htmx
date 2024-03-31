@@ -41,6 +41,15 @@ func newParticipant(name string) Participant {
 
 type Participants []Participant
 
+func (p *Participants) getParticipantById(id int) *Participant {
+	for _, p := range *p {
+		if p.Id == id {
+			return &p
+		}
+	}
+	return nil
+}
+
 func newParticipants() Participants {
 	return Participants{
 		newParticipant("Audun"),
@@ -122,6 +131,18 @@ func main() {
 		page.Talks = append(page.Talks, talk)
 
 		return c.Render(http.StatusOK, "talk", talk)
+	})
+
+	e.GET("/participant/:id", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.String(http.StatusBadRequest, "Could not parse id")
+		}
+		part := page.Participants.getParticipantById(id)
+		if part == nil {
+			return c.String(http.StatusNotFound, "Participant not found")
+		}
+		return c.Render(http.StatusOK, "participant", part)
 	})
 
 	e.DELETE("/talk/:id", func(c echo.Context) error {

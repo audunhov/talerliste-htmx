@@ -41,8 +41,11 @@
 
 {{block "talk" .}}
 <div id="talk-{{.Id}}">
-  {{.}}    
+  <span hx-get="/participant/{{.Participant}}" hx-trigger="load" hx-swap="outerHTML"></span>
   <button hx-delete="/talk/{{.Id}}" hx-target="#talk-{{.Id}}"  hx-swap="outerHTML">X</button>
 </div>
 {{end}}
 
+{{block "participant" .}}
+  {{.Name}}
+{{end}}
