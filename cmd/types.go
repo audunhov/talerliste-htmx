@@ -50,11 +50,6 @@ func newTalk(participantId int) Talk {
 	}
 }
 
-type Storage interface {
-	savePage() error
-	loadPage() Page
-}
-
 type Talks []Talk
 
 func newTalks() Talks {

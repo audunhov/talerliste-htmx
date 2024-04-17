@@ -28,13 +28,21 @@ func main() {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
-
 	e.Renderer = newTemplate()
+
+	e.File("/favicon.ico", "public/favicon.ico")
 
 	page := newPage()
 
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", page)
+	})
+
+	e.POST("/participant", func(c echo.Context) error {
+		name := c.FormValue("name")
+		participant := newParticipant(name)
+		page.Participants = append(page.Participants, participant)
+		return c.Render(http.StatusOK, "participant", participant)
 	})
 
 	e.POST("/talk/:id", func(c echo.Context) error {

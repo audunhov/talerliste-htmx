@@ -5,47 +5,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Talerliste</title>
-    <link href="css/style.css" rel="stylesheet" />
     <script
-    src="https://unpkg.com/htmx.org@1.9.11"
-    integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
-    crossorigin="anonymous"
-  ></script>
+      src="https://unpkg.com/htmx.org@1.9.11"
+      integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
     <div>
       <h1>Deltakere:</h1>
-      {{template "participants" .Participants}}
+      <div id="participants">{{template "participants" .Participants}}</div>
+      <form
+        hx-post="/participant"
+        hx-swap="beforeend"
+        hx-target="#participants"
+      >
+        <label for="name">Legg til ny person</label>
+        <input type="text" name="name" value="" placeholder="Navn..." />
+      </form>
     </div>
     <div>
       <h1>Innlegg:</h1>
-      <div id="talks" >
-        {{template "talks" .TalkBlocks}}
-      </div>
+      <div id="talks">{{template "talks" .TalkBlocks}}</div>
     </div>
   </body>
 </html>
-{{end}} 
-
-{{block "participants" .}} 
-{{range .}}
-<button hx-post="/talk/{{.Id}}" hx-target="#talks" hx-swap="beforeend">  
-  {{.Name}} 
+{{end}} {{block "participants" .}} {{range .}} {{template "participant" .}}
+{{end}} {{end}} {{block "participant" .}}
+<button hx-post="/talk/{{.Id}}" hx-target="#talks" hx-swap="beforeend">
+  {{.Name}}
 </button>
-{{end}} 
-{{end}}
-
-{{block "talks" .}}
-{{range .}}
-{{template "talk" .}}
-{{end}}
-{{end}}
-
-
+{{end}} {{block "talks" .}} {{range .}} {{template "talk" .}} {{end}} {{end}}
 {{block "talk" .}}
 <div id="talk-{{.Talk.Id}}">
   <span>{{.Participant.Name}}</span>
-  <button hx-delete="/talk/{{.Talk.Id}}" hx-target="#talk-{{.Talk.Id}}"  hx-swap="outerHTML">X</button>
+  <button
+    hx-delete="/talk/{{.Talk.Id}}"
+    hx-target="#talk-{{.Talk.Id}}"
+    hx-swap="outerHTML"
+  >
+    X
+  </button>
 </div>
 {{end}}
-
