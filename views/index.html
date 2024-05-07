@@ -1,44 +1,122 @@
 {{block "index" .}}
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-gray-100 min-h-screen">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Talerliste</title>
     <script
-      src="https://unpkg.com/htmx.org@1.9.11"
-      integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
-      crossorigin="anonymous"
-    ></script>
+    src="https://unpkg.com/htmx.org@1.9.11"
+    integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+    crossorigin="anonymous"
+  ></script>
+      <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <div>
+  <body class="grid gap-5 p-10">
+    <div class="bg-white rounded-2xl shadow-sm p-5">
       <h1>Deltakere:</h1>
       <div id="participants">{{template "participants" .Participants}}</div>
       <form
+        class="border rounded-lg p-2 grid"
         hx-post="/participant"
         hx-swap="beforeend"
         hx-target="#participants"
       >
-        <label for="name">Legg til ny person</label>
-        <input type="text" name="name" value="" placeholder="Navn..." />
+        <label for="name">Navn</label>
+        <input class="bg-gray-100" type="text" name="name" value="" placeholder="Navn..." />
+
+        <label for="gender">Kjønn</label>
+        <input class="bg-gray-100" type="text" name="gender" value="" placeholder="Kjønn..." />
+
+        <button type="submit" class="w-max px-10 bg-blue-400 hover:bg-blue-600">Legg til</button>
       </form>
     </div>
-    <div>
-      <h1>Innlegg:</h1>
-      <div id="talks">{{template "talks" .TalkBlocks}}</div>
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      {{template "addTalk" .}}
     </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <h1>Innlegg:</h1>
+      <ul class="space-y-3" id="talks">{{template "talks" .TalkBlocks}}</ul>
+    </div>
+
+    <script>
+      function stringToHslColor(str, s, l) {
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    var h = hash % 360;
+    return 'hsl('+h+', '+s+'%, '+l+'%)';
+  }
+
+      function setColor(name, id) {
+
+        const element = document.getElementById(`tag-${id}`)
+
+        const light = stringToHslColor(name, 60, 95)
+        const dark = stringToHslColor(name, 50, 60)
+
+
+        element.style.backgroundColor = light 
+        element.style.color = dark 
+        element.style.borderColor = dark
+        
+
+      }
+
+    </script>
+
   </body>
 </html>
-{{end}} {{block "participants" .}} {{range .}} {{template "participant" .}}
-{{end}} {{end}} {{block "participant" .}}
-<button hx-post="/talk/{{.Id}}" hx-target="#talks" hx-swap="beforeend">
-  {{.Name}}
-</button>
-{{end}} {{block "talks" .}} {{range .}} {{template "talk" .}} {{end}} {{end}}
+{{end}} 
+
+{{block "participants" .}}
+{{range .}}
+{{template "participant" .}}
+{{end}}
+{{end}}
+
+{{block "participant" .}}
+{{.Name}} ({{.Gender}})
+{{end}}
+
+{{block "addTalk" .}}
+<form hx-post="/talk" hx-target="#talks" hx-swap="beforeend"> 
+
+  <label for="participant">Deltaker</label>
+  <select name="participant" required id="addparticipants">
+    <option value="" disabled>--Velg deltaker--</option>
+
+    {{range .Participants}}
+    <option value="{{.Id}}">{{.Name}}</option>
+    {{end}}
+
+  </select>
+  
+  <label for="type">Type</label>
+  <select name="type" required>
+    <option value="" disabled>--Velg type--</option>
+    
+    {{range .TalkTypes}}
+    <option value="{{.Id}}">{{.Name}}</option>
+    {{end}}
+  </select>
+
+  <button type="submit">Legg til</button>
+</form>
+{{end}}
+
+{{block "talks" .}}
+{{range .}} 
+  {{template "talk" .}} 
+{{end}}
+{{end}}
+
 {{block "talk" .}}
-<div id="talk-{{.Talk.Id}}">
-  <span>{{.Participant.Name}}</span>
+<li id="talk-{{.Talk.Id}}" class="flex gap-3 items-center">
+  <div>{{.Participant.Name}}</div>
+  <div id="tag-{{.Talk.Id}}" onclick="setColor('{{.TalkType.Name}}', '{{.Talk.Id}}')" class="border rounded-full px-2 border-green-600 text-green-600 bg-green-100">{{.TalkType.Name}}</div>
   <button
     hx-delete="/talk/{{.Talk.Id}}"
     hx-target="#talk-{{.Talk.Id}}"
@@ -46,5 +124,5 @@
   >
     X
   </button>
-</div>
+</li>
 {{end}}

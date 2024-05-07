@@ -40,20 +40,30 @@ func main() {
 
 	e.POST("/participant", func(c echo.Context) error {
 		name := c.FormValue("name")
-		participant := newParticipant(name)
+		gender := c.FormValue("gender")
+		participant := newParticipant(name, gender)
 		page.Participants = append(page.Participants, participant)
 		return c.Render(http.StatusOK, "participant", participant)
 	})
 
-	e.POST("/talk/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return c.String(http.StatusBadRequest, "Could not parse id")
-		}
-		talk := newTalk(id)
+	e.POST("/talk", func(c echo.Context) error {
+		person, err := strconv.Atoi(c.FormValue("participant"))
 
-		participant := page.Participants.getParticipantById(id)
-		block := newTalkBlock(talk, *participant)
+		if err != nil {
+			return c.String(400, "UHHHH")
+		}
+
+		talk_type, err := strconv.Atoi(c.FormValue("type"))
+
+		if err != nil {
+			return c.String(400, "UHHHH")
+		}
+
+		talk := newTalk(person, talk_type)
+
+		participant := page.Participants.getParticipantById(person)
+		talkType := page.TalkTypes.getTalkTypeById(talk_type)
+		block := newTalkBlock(talk, *participant, *talkType)
 
 		page.TalkBlocks = append(page.TalkBlocks, block)
 
