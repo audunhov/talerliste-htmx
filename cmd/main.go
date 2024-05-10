@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"html/template"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -28,7 +31,11 @@ func main() {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
-	e.Renderer = newTemplate()
+	e.Use(middleware.Recover())
+	renderer := newTemplate()
+	e.Renderer = renderer
+
+	channel := make(chan string)
 
 	e.File("/favicon.ico", "public/favicon.ico")
 
@@ -46,6 +53,56 @@ func main() {
 		return c.Render(http.StatusOK, "participant", participant)
 	})
 
+	recievers := []*echo.Response{}
+
+	e.GET("/talk", func(c echo.Context) error {
+
+		w := c.Response()
+		recievers = append(recievers, w)
+		index := len(recievers) - 1
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		r := c.Request()
+		_, cancel := context.WithCancel(r.Context())
+		defer cancel()
+		go func() {
+			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-r.Context().Done():
+					recievers = append(recievers[:index], recievers[index+1:]...)
+					return
+				case <-ticker.C:
+					event := Event{
+						Comment: []byte("keepalive"),
+					}
+					for _, reciever := range recievers {
+						event.MarshalTo(reciever)
+						reciever.Flush()
+					}
+
+				}
+			}
+		}()
+
+		for data := range channel {
+			event := Event{
+				Data: []byte(data),
+			}
+
+			for _, reciever := range recievers {
+				event.MarshalTo(reciever)
+				reciever.Flush()
+			}
+		}
+
+		return nil
+	})
+
 	e.POST("/talk", func(c echo.Context) error {
 		person, err := strconv.Atoi(c.FormValue("participant"))
 
@@ -59,7 +116,7 @@ func main() {
 			return c.String(400, "UHHHH")
 		}
 
-		talk := newTalk(person, talk_type)
+		talk := newTalk(person, talk_type, nil)
 
 		participant := page.Participants.getParticipantById(person)
 		talkType := page.TalkTypes.getTalkTypeById(talk_type)
@@ -67,7 +124,12 @@ func main() {
 
 		page.TalkBlocks = append(page.TalkBlocks, block)
 
-		return c.Render(http.StatusOK, "talk", block)
+		buf := new(bytes.Buffer)
+		renderer.Render(buf, "talk", block, c)
+
+		channel <- buf.String()
+
+		return c.NoContent(200)
 	})
 
 	e.DELETE("/talk/:id", func(c echo.Context) error {

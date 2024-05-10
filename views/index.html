@@ -10,6 +10,7 @@
     integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
     crossorigin="anonymous"
   ></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
       <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="grid gap-5 p-10">
@@ -36,38 +37,10 @@
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-5">
       <h1>Innlegg:</h1>
-      <ul class="space-y-3" id="talks">{{template "talks" .TalkBlocks}}</ul>
+      <ul class="space-y-3" id="talks" hx-swap="beforeend" hx-ext="sse" sse-connect="/talk" sse-swap="message">{{template "talks" .TalkBlocks}}</ul>
     </div>
 
-    <script>
-      function stringToHslColor(str, s, l) {
-    var hash = 0;
-    for (var i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    
-    var h = hash % 360;
-    return 'hsl('+h+', '+s+'%, '+l+'%)';
-  }
-
-      function setColor(name, id) {
-
-        const element = document.getElementById(`tag-${id}`)
-
-        const light = stringToHslColor(name, 60, 95)
-        const dark = stringToHslColor(name, 50, 60)
-
-
-        element.style.backgroundColor = light 
-        element.style.color = dark 
-        element.style.borderColor = dark
-        
-
-      }
-
-    </script>
-
-  </body>
+     </body>
 </html>
 {{end}} 
 
@@ -116,7 +89,7 @@
 {{block "talk" .}}
 <li id="talk-{{.Talk.Id}}" class="flex gap-3 items-center">
   <div>{{.Participant.Name}}</div>
-  <div id="tag-{{.Talk.Id}}" onclick="setColor('{{.TalkType.Name}}', '{{.Talk.Id}}')" class="border rounded-full px-2 border-green-600 text-green-600 bg-green-100">{{.TalkType.Name}}</div>
+  <div id="tag-{{.Talk.Id}}" class="border rounded-full px-2" style="background-color: color-mix(in srgb, {{.TalkType.Color}}, white 80%); color: {{.TalkType.Color}}; border-color: currentColor">{{.TalkType.Name}}</div>
   <button
     hx-delete="/talk/{{.Talk.Id}}"
     hx-target="#talk-{{.Talk.Id}}"
