@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -26,6 +27,19 @@ func newTemplate() *Templates {
 		templates: template.Must(template.ParseGlob("views/*.html")),
 	}
 }
+
+type Reciever struct {
+	*echo.Response
+	Id int
+}
+
+func newReciever(r *echo.Response, id int) Reciever {
+	return Reciever{
+		Response: r,
+		Id:       id,
+	}
+}
+
 func main() {
 
 	e := echo.New()
@@ -50,16 +64,19 @@ func main() {
 		gender := c.FormValue("gender")
 		participant := newParticipant(name, gender)
 		page.Participants = append(page.Participants, participant)
+		c.Render(http.StatusOK, "genderOption", gender)
 		return c.Render(http.StatusOK, "participant", participant)
 	})
 
-	recievers := []*echo.Response{}
+	recievers := []Reciever{}
+	recieverId := 0
 
 	e.GET("/talk", func(c echo.Context) error {
 
 		w := c.Response()
-		recievers = append(recievers, w)
-		index := len(recievers) - 1
+		id := recieverId
+		recievers = append(recievers, newReciever(w, id))
+		recieverId++
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -74,16 +91,19 @@ func main() {
 			for {
 				select {
 				case <-r.Context().Done():
-					recievers = append(recievers[:index], recievers[index+1:]...)
+					for idx, reciever := range recievers {
+						if reciever.Id == id {
+							recievers = append(recievers[:idx], recievers[idx+1:]...)
+						}
+					}
+
 					return
 				case <-ticker.C:
 					event := Event{
 						Comment: []byte("keepalive"),
 					}
-					for _, reciever := range recievers {
-						event.MarshalTo(reciever)
-						reciever.Flush()
-					}
+					event.MarshalTo(w)
+					w.Flush()
 
 				}
 			}
@@ -91,7 +111,8 @@ func main() {
 
 		for data := range channel {
 			event := Event{
-				Data: []byte(data),
+				Event: []byte("add"),
+				Data:  []byte(data),
 			}
 
 			for _, reciever := range recievers {
@@ -126,7 +147,6 @@ func main() {
 
 		buf := new(bytes.Buffer)
 		renderer.Render(buf, "talk", block, c)
-
 		channel <- buf.String()
 
 		return c.NoContent(200)
@@ -138,9 +158,12 @@ func main() {
 			return c.String(http.StatusUnprocessableEntity, "Could not parse id")
 		}
 		var index = -1
+		var oldBlock TalkBlock
+
 		for i, v := range page.TalkBlocks {
 			if v.Talk.Id == id {
 				index = i
+				oldBlock = v
 				break
 			}
 		}
@@ -150,6 +173,10 @@ func main() {
 		}
 
 		page.TalkBlocks = append(page.TalkBlocks[:index], page.TalkBlocks[index+1:]...)
+
+		buf := new(bytes.Buffer)
+		renderer.Render(buf, "deleteTalk", oldBlock, c)
+		channel <- buf.String()
 
 		return c.NoContent(http.StatusOK)
 	})

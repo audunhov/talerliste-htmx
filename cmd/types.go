@@ -34,6 +34,21 @@ func (p *Participants) getParticipantById(id int) *Participant {
 	return nil
 }
 
+func (p *Participants) getGenders() []string {
+	s := map[string]bool{}
+
+	for _, part := range *p {
+		s[part.Gender] = true
+	}
+
+	keys := make([]string, 0, len(s))
+	for k := range s {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
 func newParticipants() Participants {
 	return Participants{
 		newParticipant("Audun", "m"),

@@ -11,12 +11,22 @@
     crossorigin="anonymous"
   ></script>
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
-      <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="grid gap-5 p-10">
     <div class="bg-white rounded-2xl shadow-sm p-5">
       <h1>Deltakere:</h1>
       <div id="participants">{{template "participants" .Participants}}</div>
+      <form id="participantForm" hx-post="/participant/file" hx-encoding='multipart/form-data'>
+        <input type="file" name="participants" accept=".csv,.xlsx">
+        <button type="submit" >Submit</button>
+        <progress id='progress' value='0' max='100'></progress>
+      </form>
+      <script>
+      htmx.on('#participantForm', 'htmx:xhr:progress', function(evt) {
+        htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)
+      });
+      </script>
       <form
         class="border rounded-lg p-2 grid"
         hx-post="/participant"
@@ -24,10 +34,15 @@
         hx-target="#participants"
       >
         <label for="name">Navn</label>
-        <input class="bg-gray-100" type="text" name="name" value="" placeholder="Navn..." />
+        <input class="bg-gray-100" type="text" autocomplete="name" name="name" value="" placeholder="Navn..." />
 
         <label for="gender">Kjønn</label>
-        <input class="bg-gray-100" type="text" name="gender" value="" placeholder="Kjønn..." />
+        <input class="bg-gray-100" type="text" autocomplete="sex" name="gender" list="genders" placeholder="Kjønn..." />
+        <datalist id="genders">
+          <option value="Mann"></option>
+          <option value="Kvinne"></option>
+          <option value="Ukjent"></option>
+        </datalist>
 
         <button type="submit" class="w-max px-10 bg-blue-400 hover:bg-blue-600">Legg til</button>
       </form>
@@ -35,14 +50,20 @@
     <div class="bg-white rounded-2xl shadow-sm p-5">
       {{template "addTalk" .}}
     </div>
-    <div class="bg-white rounded-2xl shadow-sm p-5">
+    <div hx-ext="sse" sse-connect="/talk" class="bg-white rounded-2xl shadow-sm p-5">
       <h1>Innlegg:</h1>
-      <ul class="space-y-3" id="talks" hx-swap="beforeend" hx-ext="sse" sse-connect="/talk" sse-swap="message">{{template "talks" .TalkBlocks}}</ul>
+      <ul class="space-y-3" id="talks" hx-swap="beforeend" sse-swap="add">{{template "talks" .TalkBlocks}}</ul>
     </div>
 
-     </body>
+  </body>
 </html>
 {{end}} 
+
+{{block "genderOption" .}}
+<div id="genders" hx-swap-oob="beforeend">
+  <option value="{{.}}"></option>
+</div>
+{{end}}
 
 {{block "participants" .}}
 {{range .}}
@@ -66,11 +87,11 @@
     {{end}}
 
   </select>
-  
+
   <label for="type">Type</label>
   <select name="type" required>
     <option value="" disabled>--Velg type--</option>
-    
+
     {{range .TalkTypes}}
     <option value="{{.Id}}">{{.Name}}</option>
     {{end}}
@@ -82,7 +103,7 @@
 
 {{block "talks" .}}
 {{range .}} 
-  {{template "talk" .}} 
+{{template "talk" .}} 
 {{end}}
 {{end}}
 
@@ -98,4 +119,10 @@
     X
   </button>
 </li>
+{{end}}
+
+{{block "deleteTalk" .}}
+<div id="talk-{{.Talk.Id}}" hx-swap-oob="delete">
+  Removed
+</div>
 {{end}}
