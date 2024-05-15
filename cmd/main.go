@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"html/template"
 	"io"
 	"net/http"
@@ -57,6 +58,34 @@ func main() {
 
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", page)
+	})
+
+	e.POST("/participant/file", func(c echo.Context) error {
+		formFile, err := c.FormFile("participants")
+		if err != nil {
+			return err
+		}
+
+		parts := strings.Split(formFile.Filename, ".")
+		extension := parts[len(parts)-1]
+
+		switch extension {
+		case "csv", "xlsx":
+			println("Jippi!")
+		default:
+			println("Oopsie :(")
+		}
+
+		file, err := formFile.Open()
+		defer file.Close()
+
+		if err != nil {
+			return err
+		}
+
+		participantsFromCsv(file)
+
+		return c.String(200, "Yeehaw")
 	})
 
 	e.POST("/participant", func(c echo.Context) error {
@@ -182,5 +211,25 @@ func main() {
 	})
 
 	e.Logger.Fatal(e.Start(":42069"))
+
+}
+
+func participantsFromCsv(r io.Reader) error {
+
+	reader := csv.NewReader(r)
+	reader.FieldsPerRecord = -1
+	data, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	for _, row := range data {
+		for _, col := range row {
+			print("%s, ", col)
+		}
+		print("\n")
+	}
+
+	return nil
 
 }
