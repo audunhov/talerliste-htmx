@@ -60,6 +60,11 @@ func main() {
 		return c.Render(http.StatusOK, "index", page)
 	})
 
+	e.GET("/talerliste", func(c echo.Context) error {
+		talkBlocks := page.TalkBlocks
+		return c.Render(http.StatusOK, "talerliste", talkBlocks)
+	})
+
 	e.POST("/participant/file", func(c echo.Context) error {
 		formFile, err := c.FormFile("participants")
 		if err != nil {
@@ -178,7 +183,7 @@ func main() {
 		renderer.Render(buf, "talk", block, c)
 		channel <- buf.String()
 
-		return c.NoContent(200)
+		return c.NoContent(http.StatusCreated)
 	})
 
 	e.DELETE("/talk/:id", func(c echo.Context) error {
@@ -207,7 +212,7 @@ func main() {
 		renderer.Render(buf, "deleteTalk", oldBlock, c)
 		channel <- buf.String()
 
-		return c.NoContent(http.StatusOK)
+		return c.NoContent(http.StatusNoContent)
 	})
 
 	e.Logger.Fatal(e.Start(":42069"))

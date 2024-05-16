@@ -50,14 +50,40 @@
     <div class="bg-white rounded-2xl shadow-sm p-5">
       {{template "addTalk" .}}
     </div>
-    <div hx-ext="sse" sse-connect="/talk" class="bg-white rounded-2xl shadow-sm p-5">
-      <h1>Innlegg:</h1>
-      <ul class="space-y-3" id="talks" hx-swap="beforeend" sse-swap="add">{{template "talks" .TalkBlocks}}</ul>
-    </div>
+
+    {{template "speakerList" .TalkBlocks}}
 
   </body>
 </html>
 {{end}} 
+
+{{block "talerliste" .}}
+<!doctype html>
+<html lang="en" class="bg-gray-100 min-h-screen">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talerliste</title>
+    <script
+    src="https://unpkg.com/htmx.org@1.9.11"
+    integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+    crossorigin="anonymous"
+  ></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="grid gap-5 p-10">
+    {{template "speakerList" .}}
+  </body>
+</html>
+{{end}} 
+
+{{block "speakerList" .}}
+    <div hx-ext="sse" sse-connect="/talk" class="bg-white rounded-2xl shadow-sm p-5">
+      <h1>Innlegg:</h1>
+      <ul class="space-y-3" id="talks" hx-swap="beforeend" sse-swap="add">{{template "talks" .}}</ul>
+    </div>
+{{end}}
 
 {{block "addParticipant" .}}
 <div id="addparticipants" hx-swap-oob="beforeend">
@@ -114,7 +140,6 @@
   <button
     hx-delete="/talk/{{.Talk.Id}}"
     hx-target="#talk-{{.Talk.Id}}"
-    hx-swap="outerHTML"
   >
     X
   </button>
