@@ -93,7 +93,7 @@ func main() {
 		gender := c.FormValue("gender")
 		participant := newParticipant(name, gender)
 		page.Participants = append(page.Participants, participant)
-		c.Render(http.StatusOK, "genderOption", gender)
+		c.Render(http.StatusOK, "addParticipant", participant)
 		return c.Render(http.StatusOK, "participant", participant)
 	})
 

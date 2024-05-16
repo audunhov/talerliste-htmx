@@ -59,9 +59,9 @@
 </html>
 {{end}} 
 
-{{block "genderOption" .}}
-<div id="genders" hx-swap-oob="beforeend">
-  <option value="{{.}}"></option>
+{{block "addParticipant" .}}
+<div id="addparticipants" hx-swap-oob="beforeend">
+  <option value="{{.Id}}">{{.Name}}</option>
 </div>
 {{end}}
 
