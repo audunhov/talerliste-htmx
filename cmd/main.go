@@ -3,16 +3,23 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/csv"
+	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/tursodatabase/go-libsql"
 )
 
 type Templates struct {
@@ -43,6 +50,37 @@ func newReciever(r *echo.Response, id int) Reciever {
 
 func main() {
 
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	primaryUrl := os.Getenv("DB_URL")
+	authToken := os.Getenv("DB_TOKEN")
+
+	dir, err := os.MkdirTemp("", "libsql-*")
+	if err != nil {
+		fmt.Println("Error creating temporary directory:", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(dir)
+
+	dbPath := filepath.Join(dir, dbName)
+
+	connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, primaryUrl,
+		libsql.WithAuthToken(authToken),
+	)
+	if err != nil {
+		fmt.Println("Error creating connector:", err)
+		os.Exit(1)
+	}
+	defer connector.Close()
+
+	db := sql.OpenDB(connector)
+	defer db.Close()
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -55,6 +93,81 @@ func main() {
 	e.File("/favicon.ico", "public/favicon.ico")
 
 	page := newPage()
+
+	prows, err := db.Query("SELECT * FROM speakers")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer prows.Close()
+
+	var participants Participants
+	var pidmap = make(map[int]Participant)
+	for prows.Next() {
+		var participant Participant
+
+		if err := prows.Scan(&participant.Id, &participant.Name, &participant.Gender); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		pidmap[participant.Id] = participant
+		participants = append(participants, participant)
+	}
+
+	if err := prows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+	ttrows, err := db.Query("SELECT * FROM talk_types")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer ttrows.Close()
+
+	var talkTypes TalkTypes
+	var ttidmap = make(map[int]TalkType)
+	for ttrows.Next() {
+		var talkType TalkType
+
+		if err := ttrows.Scan(&talkType.Id, &talkType.Name, &talkType.MaxReplies, &talkType.Color); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		ttidmap[talkType.Id] = talkType
+		talkTypes = append(talkTypes, talkType)
+	}
+
+	if err := ttrows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+	trows, err := db.Query("SELECT * FROM talks")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer trows.Close()
+
+	var talks Talks
+	for trows.Next() {
+		var talk Talk
+
+		if err := trows.Scan(&talk.Id, &talk.Participant, &talk.Type); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		participant := pidmap[talk.Participant]
+		talk_type := ttidmap[talk.Type]
+
+		page.TalkBlocks = append(page.TalkBlocks, newTalkBlock(talk, participant, talk_type))
+
+		talks = append(talks, talk)
+	}
+
+	if err := trows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+	page.TalkTypes = talkTypes
+	page.Participants = participants
 
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", page)
@@ -96,8 +209,22 @@ func main() {
 	e.POST("/participant", func(c echo.Context) error {
 		name := c.FormValue("name")
 		gender := c.FormValue("gender")
-		participant := newParticipant(name, gender)
+
+		stmt, err := db.Prepare("INSERT INTO speakers (name, gender) VALUES (?, ?)")
+
+		if err != nil {
+			return err
+		}
+
+		var id int
+		err = stmt.QueryRow(name, gender).Scan(&id)
+		if err != nil {
+			fmt.Println("Could not insert into db", err)
+		}
+
+		participant := newParticipant(id, name, gender)
 		page.Participants = append(page.Participants, participant)
+
 		c.Render(http.StatusOK, "addParticipant", participant)
 		return c.Render(http.StatusOK, "participant", participant)
 	})
@@ -171,7 +298,20 @@ func main() {
 			return c.String(400, "UHHHH")
 		}
 
-		talk := newTalk(person, talk_type, nil)
+		stmt, err := db.Prepare("INSERT INTO talks (type, speaker) VALUES (?, ?) RETURNING id")
+
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		var id int
+		err = stmt.QueryRow(talk_type, person).Scan(&id)
+		if err != nil {
+			fmt.Println("Could not insert into db", err)
+		}
+
+		talk := newTalk(id, person, talk_type, nil)
 
 		participant := page.Participants.getParticipantById(person)
 		talkType := page.TalkTypes.getTalkTypeById(talk_type)
@@ -204,6 +344,12 @@ func main() {
 
 		if index == -1 {
 			return c.String(http.StatusNotFound, "Could not find talk")
+		}
+
+		_, err = db.Exec("DELETE FROM talks WHERE id = ?", id)
+
+		if err != nil {
+			fmt.Println("Could not delete from db", err)
 		}
 
 		page.TalkBlocks = append(page.TalkBlocks[:index], page.TalkBlocks[index+1:]...)

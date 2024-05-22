@@ -14,10 +14,9 @@ type Participant struct {
 	Gender string
 }
 
-func newParticipant(name string, gender string) Participant {
-	participantId++
+func newParticipant(id int, name string, gender string) Participant {
 	return Participant{
-		Id:     participantId,
+		Id:     id,
 		Name:   name,
 		Gender: gender,
 	}
@@ -50,10 +49,7 @@ func (p *Participants) getGenders() []string {
 }
 
 func newParticipants() Participants {
-	return Participants{
-		newParticipant("Audun", "m"),
-		newParticipant("Mali", "f"),
-	}
+	return Participants{}
 }
 
 var talkTypeId = 0
@@ -94,8 +90,6 @@ func newTalkTypes() TalkTypes {
 	}
 }
 
-var talkId = 0
-
 type Talk struct {
 	Id          int
 	Type        int
@@ -103,8 +97,7 @@ type Talk struct {
 	ReplyTo     *Talk
 }
 
-func newTalk(participantId int, talkTypeId int, replyTo *Talk) Talk {
-	talkId++
+func newTalk(talkId int, participantId int, talkTypeId int, replyTo *Talk) Talk {
 	return Talk{
 		Id:          talkId,
 		Type:        talkTypeId,
