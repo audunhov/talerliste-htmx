@@ -17,10 +17,12 @@
     <div class="bg-white rounded-2xl shadow-sm p-5">
       <h1>Deltakere:</h1>
       <div id="participants">{{template "participants" .Participants}}</div>
-      <form id="participantForm" hx-post="/participant/file" hx-encoding='multipart/form-data'>
-        <input type="file" name="participants" accept=".csv,.xlsx">
-        <button type="submit" >Submit</button>
-        <progress id='progress' value='0' max='100'></progress>
+      <form id="participantForm" hx-disabled-elt="fieldset" hx-post="/participant/file" hx-encoding='multipart/form-data'>
+        <fieldset>
+          <input type="file" name="participants" accept=".csv,.xlsx">
+          <button type="submit" >Submit</button>
+          <progress id='progress' value='0' max='100'></progress>
+        </fieldset>
       </form>
       <script>
       htmx.on('#participantForm', 'htmx:xhr:progress', function(evt) {
@@ -32,19 +34,22 @@
         hx-post="/participant"
         hx-swap="beforeend"
         hx-target="#participants"
+        hx-disabled-elt="fieldset"
       >
-        <label for="name">Navn</label>
-        <input class="bg-gray-100" type="text" autocomplete="name" name="name" value="" placeholder="Navn..." />
+        <fieldset>
+          <label for="name">Navn</label>
+          <input class="bg-gray-100" type="text" autocomplete="name" name="name" value="" placeholder="Navn..." />
 
-        <label for="gender">Kjønn</label>
-        <input class="bg-gray-100" type="text" autocomplete="sex" name="gender" list="genders" placeholder="Kjønn..." />
-        <datalist id="genders">
-          <option value="Mann"></option>
-          <option value="Kvinne"></option>
-          <option value="Ukjent"></option>
-        </datalist>
+          <label for="gender">Kjønn</label>
+          <input class="bg-gray-100" type="text" autocomplete="sex" name="gender" list="genders" placeholder="Kjønn..." />
+          <datalist id="genders">
+            <option value="Mann"></option>
+            <option value="Kvinne"></option>
+            <option value="Ukjent"></option>
+          </datalist>
 
-        <button type="submit" class="w-max px-10 bg-blue-400 hover:bg-blue-600">Legg til</button>
+          <button type="submit" class="w-max px-10 bg-blue-400 hover:bg-blue-600">Legg til</button>
+        </fieldset>
       </form>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-5">
@@ -79,10 +84,10 @@
 {{end}} 
 
 {{block "speakerList" .}}
-    <div hx-ext="sse" sse-connect="/talk" class="bg-white rounded-2xl shadow-sm p-5">
-      <h1>Innlegg:</h1>
-      <ul class="space-y-3" id="talks" hx-swap="beforeend" sse-swap="add">{{template "talks" .}}</ul>
-    </div>
+<div hx-ext="sse" sse-connect="/talk" class="bg-white rounded-2xl shadow-sm p-5">
+  <h1>Innlegg:</h1>
+  <ul class="space-y-3" id="talks" hx-swap="beforeend" sse-swap="add">{{template "talks" .}}</ul>
+</div>
 {{end}}
 
 {{block "addParticipant" .}}
@@ -102,28 +107,29 @@
 {{end}}
 
 {{block "addTalk" .}}
-<form hx-post="/talk" hx-target="#talks" hx-swap="beforeend"> 
+<form hx-post="/talk" hx-disabled-elt="fieldset" hx-target="#talks" hx-swap="beforeend"> 
+  <fieldset>
+    <label for="participant">Deltaker</label>
+    <select name="participant" required id="addparticipants">
+      <option value="" disabled>--Velg deltaker--</option>
 
-  <label for="participant">Deltaker</label>
-  <select name="participant" required id="addparticipants">
-    <option value="" disabled>--Velg deltaker--</option>
+      {{range .Participants}}
+      <option value="{{.Id}}">{{.Name}}</option>
+      {{end}}
 
-    {{range .Participants}}
-    <option value="{{.Id}}">{{.Name}}</option>
-    {{end}}
+    </select>
 
-  </select>
+    <label for="type">Type</label>
+    <select name="type" required>
+      <option value="" disabled>--Velg type--</option>
 
-  <label for="type">Type</label>
-  <select name="type" required>
-    <option value="" disabled>--Velg type--</option>
+      {{range .TalkTypes}}
+      <option value="{{.Id}}">{{.Name}}</option>
+      {{end}}
+    </select>
 
-    {{range .TalkTypes}}
-    <option value="{{.Id}}">{{.Name}}</option>
-    {{end}}
-  </select>
-
-  <button type="submit">Legg til</button>
+    <button type="submit" class="min-w-32 border hover:bg-gray-100 rounded-full">Legg til</button>
+  </fieldset>
 </form>
 {{end}}
 
