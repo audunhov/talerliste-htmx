@@ -178,6 +178,10 @@ func main() {
 		return c.Render(http.StatusOK, "talerliste", talkBlocks)
 	})
 
+	e.GET("/add-participant", func(c echo.Context) error {
+		return c.Render(200, "newParticipant", nil)
+	})
+
 	e.POST("/participant/file", func(c echo.Context) error {
 		formFile, err := c.FormFile("participants")
 		if err != nil {
