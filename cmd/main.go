@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -81,6 +82,91 @@ func newReciever(r *echo.Response, id int) Reciever {
 // 	return &Dbs, nil
 // }
 
+var pidmap = make(map[int]types.Participant)
+var ttidmap = make(map[int]types.TalkType)
+
+func initParts(db *sql.DB, page *types.Page) {
+	var participants types.Participants
+
+	prows, err := db.Query("SELECT * FROM speakers")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer prows.Close()
+
+	for prows.Next() {
+		var participant types.Participant
+
+		if err := prows.Scan(&participant.Id, &participant.Name, &participant.Gender); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		pidmap[participant.Id] = participant
+		participants = append(participants, participant)
+	}
+
+	if err := prows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+	page.Participants = participants
+}
+
+func initTalkTypes(db *sql.DB, page *types.Page) {
+	var talkTypes types.TalkTypes
+
+	ttrows, err := db.Query("SELECT * FROM talk_types")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer ttrows.Close()
+
+	for ttrows.Next() {
+		var talkType types.TalkType
+
+		if err := ttrows.Scan(&talkType.Id, &talkType.Name, &talkType.MaxReplies, &talkType.Color); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		ttidmap[talkType.Id] = talkType
+		talkTypes = append(talkTypes, talkType)
+	}
+
+	if err := ttrows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+	page.TalkTypes = talkTypes
+}
+func initTalks(db *sql.DB, page *types.Page) {
+
+	trows, err := db.Query("SELECT * FROM talks")
+	if err != nil {
+		log.Fatal("Could not query")
+	}
+	defer trows.Close()
+
+	var talks types.Talks
+	for trows.Next() {
+		var talk types.Talk
+
+		if err := trows.Scan(&talk.Id, &talk.Participant, &talk.Type); err != nil {
+			fmt.Println("Error scanning row,", err)
+		}
+
+		participant := pidmap[talk.Participant]
+		talk_type := ttidmap[talk.Type]
+
+		page.TalkBlocks = append(page.TalkBlocks, types.NewTalkBlock(talk, participant, talk_type))
+
+		talks = append(talks, talk)
+	}
+
+	if err := trows.Err(); err != nil {
+		fmt.Println("Error during rows iteration,", err)
+	}
+
+}
 func main() {
 
 	err := godotenv.Load()
@@ -124,92 +210,17 @@ func main() {
 
 	page := types.NewPage()
 
-	prows, err := db.Query("SELECT * FROM speakers")
-	if err != nil {
-		log.Fatal("Could not query")
-	}
-	defer prows.Close()
-
-	var participants types.Participants
-	var pidmap = make(map[int]types.Participant)
-	for prows.Next() {
-		var participant types.Participant
-
-		if err := prows.Scan(&participant.Id, &participant.Name, &participant.Gender); err != nil {
-			fmt.Println("Error scanning row,", err)
-		}
-
-		pidmap[participant.Id] = participant
-		participants = append(participants, participant)
-	}
-
-	if err := prows.Err(); err != nil {
-		fmt.Println("Error during rows iteration,", err)
-	}
-
-	ttrows, err := db.Query("SELECT * FROM talk_types")
-	if err != nil {
-		log.Fatal("Could not query")
-	}
-	defer ttrows.Close()
-
-	var talkTypes types.TalkTypes
-	var ttidmap = make(map[int]types.TalkType)
-	for ttrows.Next() {
-		var talkType types.TalkType
-
-		if err := ttrows.Scan(&talkType.Id, &talkType.Name, &talkType.MaxReplies, &talkType.Color); err != nil {
-			fmt.Println("Error scanning row,", err)
-		}
-
-		ttidmap[talkType.Id] = talkType
-		talkTypes = append(talkTypes, talkType)
-	}
-
-	if err := ttrows.Err(); err != nil {
-		fmt.Println("Error during rows iteration,", err)
-	}
-
-	trows, err := db.Query("SELECT * FROM talks")
-	if err != nil {
-		log.Fatal("Could not query")
-	}
-	defer trows.Close()
-
-	var talks types.Talks
-	for trows.Next() {
-		var talk types.Talk
-
-		if err := trows.Scan(&talk.Id, &talk.Participant, &talk.Type); err != nil {
-			fmt.Println("Error scanning row,", err)
-		}
-
-		participant := pidmap[talk.Participant]
-		talk_type := ttidmap[talk.Type]
-
-		page.TalkBlocks = append(page.TalkBlocks, types.NewTalkBlock(talk, participant, talk_type))
-
-		talks = append(talks, talk)
-	}
-
-	if err := trows.Err(); err != nil {
-		fmt.Println("Error during rows iteration,", err)
-	}
-
-	page.TalkTypes = talkTypes
-	page.Participants = participants
+	initParts(db, &page)
+	initTalkTypes(db, &page)
+	initTalks(db, &page)
 
 	e.GET("/", func(c echo.Context) error {
 		return views.HomePage(page).Render(c.Request().Context(), c.Response().Writer)
 	})
 
-	e.GET("/talerliste", func(c echo.Context) error {
-		return views.Talerliste(page).Render(c.Request().Context(), c.Response().Writer)
-	})
+	e.GET("/talerliste", echo.WrapHandler(templ.Handler(views.Talerliste(page))))
 
-	e.GET("/add-participant", func(c echo.Context) error {
-		return views.NewParticipant().Render(c.Request().Context(), c.Response().Writer)
-	})
+	e.GET("/add-participant", echo.WrapHandler(templ.Handler(views.NewParticipant())))
 
 	e.POST("/participant", func(c echo.Context) error {
 		name := c.FormValue("name")
@@ -353,7 +364,9 @@ func onDeleteTalk(page types.Page, channel chan string, db *sql.DB) func(c echo.
 		var index = -1
 		var oldBlock types.TalkBlock
 
+		fmt.Println("Looking for id", id)
 		for i, v := range page.TalkBlocks {
+			fmt.Println(v)
 			if v.Talk.Id == id {
 				index = i
 				oldBlock = v
