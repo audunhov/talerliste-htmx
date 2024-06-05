@@ -1,4 +1,4 @@
-package main
+package types
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ type Participant struct {
 	Gender string
 }
 
-func newParticipant(id int, name string, gender string) Participant {
+func NewParticipant(id int, name string, gender string) Participant {
 	return Participant{
 		Id:     id,
 		Name:   name,
@@ -24,7 +24,7 @@ func newParticipant(id int, name string, gender string) Participant {
 
 type Participants []Participant
 
-func (p *Participants) getParticipantById(id int) *Participant {
+func (p *Participants) GetParticipantById(id int) *Participant {
 	for _, p := range *p {
 		if p.Id == id {
 			return &p
@@ -33,22 +33,7 @@ func (p *Participants) getParticipantById(id int) *Participant {
 	return nil
 }
 
-func (p *Participants) getGenders() []string {
-	s := map[string]bool{}
-
-	for _, part := range *p {
-		s[part.Gender] = true
-	}
-
-	keys := make([]string, 0, len(s))
-	for k := range s {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-func newParticipants() Participants {
+func NewParticipants() Participants {
 	return Participants{}
 }
 
@@ -61,7 +46,7 @@ type TalkType struct {
 	Color      string
 }
 
-func newTalkType(name string, replies int, color string) TalkType {
+func NewTalkType(name string, replies int, color string) TalkType {
 	talkTypeId++
 	return TalkType{
 		Id:         talkTypeId,
@@ -73,7 +58,7 @@ func newTalkType(name string, replies int, color string) TalkType {
 
 type TalkTypes []TalkType
 
-func (t *TalkTypes) getTalkTypeById(id int) *TalkType {
+func (t *TalkTypes) GetTalkTypeById(id int) *TalkType {
 	for _, t := range *t {
 		if t.Id == id {
 			return &t
@@ -82,12 +67,8 @@ func (t *TalkTypes) getTalkTypeById(id int) *TalkType {
 	return nil
 }
 
-func newTalkTypes() TalkTypes {
-	return TalkTypes{
-		newTalkType("Innlegg", 2, "#00FF00"),
-		newTalkType("Replikk", 0, "#440C1A"),
-		newTalkType("Til dagsorden", 0, "#0000FF"),
-	}
+func NewTalkTypes() TalkTypes {
+	return TalkTypes{}
 }
 
 type Talk struct {
@@ -97,7 +78,7 @@ type Talk struct {
 	ReplyTo     *Talk
 }
 
-func newTalk(talkId int, participantId int, talkTypeId int, replyTo *Talk) Talk {
+func NewTalk(talkId int, participantId int, talkTypeId int, replyTo *Talk) Talk {
 	return Talk{
 		Id:          talkId,
 		Type:        talkTypeId,
@@ -108,7 +89,7 @@ func newTalk(talkId int, participantId int, talkTypeId int, replyTo *Talk) Talk 
 
 type Talks []Talk
 
-func newTalks() Talks {
+func NewTalks() Talks {
 	return Talks{}
 }
 
@@ -118,11 +99,11 @@ type Page struct {
 	TalkBlocks   TalkBlocks
 }
 
-func newPage() Page {
+func NewPage() Page {
 	return Page{
-		TalkTypes:    newTalkTypes(),
-		Participants: newParticipants(),
-		TalkBlocks:   newTalkBlocks(),
+		TalkTypes:    NewTalkTypes(),
+		Participants: NewParticipants(),
+		TalkBlocks:   NewTalkBlocks(),
 	}
 }
 
@@ -130,7 +111,7 @@ type Message struct {
 	message string
 }
 
-func newMessage(message string) Message {
+func NewMessage(message string) Message {
 	return Message{
 		message: message,
 	}
@@ -144,11 +125,11 @@ type TalkBlock struct {
 
 type TalkBlocks []TalkBlock
 
-func newTalkBlocks() TalkBlocks {
+func NewTalkBlocks() TalkBlocks {
 	return TalkBlocks{}
 }
 
-func newTalkBlock(talk Talk, participant Participant, talk_type TalkType) TalkBlock {
+func NewTalkBlock(talk Talk, participant Participant, talk_type TalkType) TalkBlock {
 	return TalkBlock{
 		Talk:        talk,
 		Participant: participant,
@@ -222,4 +203,25 @@ func (ev *Event) MarshalTo(w io.Writer) error {
 	}
 
 	return nil
+}
+
+type TursoDB struct {
+	Name          string   `json:"Name"`
+	DbID          string   `json:"DbId"`
+	Hostname      string   `json:"Hostname"`
+	BlockReads    bool     `json:"block_reads"`
+	BlockWrites   bool     `json:"block_writes"`
+	AllowAttach   bool     `json:"allow_attach"`
+	Regions       []string `json:"regions"`
+	PrimaryRegion string   `json:"primaryRegion"`
+	Type          string   `json:"type"`
+	Version       string   `json:"version"`
+	Group         string   `json:"group"`
+	IsSchema      bool     `json:"is_schema"`
+	Schema        string   `json:"schema"`
+	Sleeping      bool     `json:"sleeping"`
+}
+
+type TursoDBs struct {
+	Databases []TursoDB `json:"databases"`
 }
