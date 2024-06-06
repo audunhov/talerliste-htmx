@@ -1,8 +1,10 @@
-<html lang=\"en\" class=\"bg-gray-100 min-h-screen\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Talerliste</title><script src=\"https://unpkg.com/htmx.org@1.9.11\" integrity=\"sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js\"></script><script src=\"https://cdn.tailwindcss.com\"></script><style>\n\t\t.responsive-padding {\npadding: 1.5rem clamp(1rem, 5%, 3rem);\n\t\t}\n\t</style></head><body>
+<html lang=\"en\" class=\"bg-gray-100 min-h-screen\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Talerliste</title><script src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js\"></script><script src=\"https://cdn.tailwindcss.com\"></script><style>\n\t\t.responsive-padding {\npadding: 1.5rem clamp(1rem, 5%, 3rem);\n\t\t}\n\t</style></head><body>
 </body></html>
 <div class=\"grid gap-5 responsive-padding\"><div class=\"bg-white rounded-2xl shadow-sm p-5\"><h1>Deltakere:</h1><div id=\"participants\">
 </div><button hx-swap=\"outerHTML\" hx-get=\"/add-participant\">+ Add</button></div><div class=\"bg-white rounded-2xl shadow-sm p-5\">
 </div>
+</div>
+<div class=\"responsive-padding\">
 </div>
  (
 )

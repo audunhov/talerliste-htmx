@@ -11,7 +11,7 @@ templ Page() {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>Talerliste</title>
-			<script src="https://unpkg.com/htmx.org@1.9.11" integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
 			<script src="https://cdn.tailwindcss.com"></script>
 			<style>
@@ -48,7 +48,9 @@ templ HomePage(page types.Page) {
 
 templ Talerliste(page types.Page) {
 	@Page() {
-		@SpeakerList(page.TalkBlocks, false)
+		<div class="responsive-padding">
+			@SpeakerList(page.TalkBlocks, false)
+		</div>
 	}
 }
 
@@ -68,8 +70,8 @@ templ AddTalk(page types.Page) {
 			<label for="participant">Deltaker</label>
 			<select name="participant" required id="addparticipants">
 				<option value="" disabled>--Velg deltaker--</option>
-				for _, part := range page.Participants {
-					<option value={ strconv.Itoa(part.Id) }>{ part.Name }</option>
+				for _, p := range page.Participants {
+					<option value={ strconv.Itoa(p.Id) }>{ p.Name }</option>
 				}
 			</select>
 			<label for="type">Type</label>

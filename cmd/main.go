@@ -82,8 +82,8 @@ func newReciever(r *echo.Response, id int) Reciever {
 // 	return &Dbs, nil
 // }
 
-var pidmap = make(map[int]types.Participant)
-var ttidmap = make(map[int]types.TalkType)
+var pidmap map[int]types.Participant
+var ttidmap map[int]types.TalkType
 
 func initParts(db *sql.DB, page *types.Page) {
 	var participants types.Participants
@@ -142,7 +142,8 @@ func initTalks(db *sql.DB, page *types.Page) {
 
 	trows, err := db.Query("SELECT * FROM talks")
 	if err != nil {
-		log.Fatal("Could not query")
+		fmt.Println("Query failed")
+		return
 	}
 	defer trows.Close()
 
@@ -150,14 +151,17 @@ func initTalks(db *sql.DB, page *types.Page) {
 	for trows.Next() {
 		var talk types.Talk
 
-		if err := trows.Scan(&talk.Id, &talk.Participant, &talk.Type); err != nil {
+		if err := trows.Scan(&talk.Id, &talk.Type, &talk.Participant); err != nil {
 			fmt.Println("Error scanning row,", err)
 		}
 
 		participant := pidmap[talk.Participant]
 		talk_type := ttidmap[talk.Type]
 
-		page.TalkBlocks = append(page.TalkBlocks, types.NewTalkBlock(talk, participant, talk_type))
+		block := types.NewTalkBlock(talk, participant, talk_type)
+		page.TalkBlocks = append(page.TalkBlocks, block)
+
+		fmt.Println("added", block)
 
 		talks = append(talks, talk)
 	}
@@ -168,6 +172,9 @@ func initTalks(db *sql.DB, page *types.Page) {
 
 }
 func main() {
+
+	pidmap = make(map[int]types.Participant)
+	ttidmap = make(map[int]types.TalkType)
 
 	err := godotenv.Load()
 	if err != nil {
@@ -211,12 +218,12 @@ func main() {
 	page := types.NewPage()
 
 	initParts(db, &page)
+
 	initTalkTypes(db, &page)
+
 	initTalks(db, &page)
 
-	e.GET("/", func(c echo.Context) error {
-		return views.HomePage(page).Render(c.Request().Context(), c.Response().Writer)
-	})
+	e.GET("/", echo.WrapHandler(templ.Handler(views.HomePage(page))))
 
 	e.GET("/talerliste", echo.WrapHandler(templ.Handler(views.Talerliste(page))))
 
@@ -341,6 +348,7 @@ func main() {
 		block := types.NewTalkBlock(talk, participant, *talkType)
 
 		page.TalkBlocks = append(page.TalkBlocks, block)
+		fmt.Println("added", block, "to", page.TalkBlocks)
 
 		buf := new(bytes.Buffer)
 		views.Talk(block, true).Render(c.Request().Context(), buf)
@@ -364,7 +372,6 @@ func onDeleteTalk(page types.Page, channel chan string, db *sql.DB) func(c echo.
 		var index = -1
 		var oldBlock types.TalkBlock
 
-		fmt.Println("Looking for id", id)
 		for i, v := range page.TalkBlocks {
 			fmt.Println(v)
 			if v.Talk.Id == id {
@@ -392,6 +399,6 @@ func onDeleteTalk(page types.Page, channel chan string, db *sql.DB) func(c echo.
 		views.DeleteTalk(oldBlock).Render(c.Request().Context(), buf)
 		channel <- buf.String()
 
-		return c.NoContent(http.StatusNoContent)
+		return c.NoContent(http.StatusOK)
 	}
 }
