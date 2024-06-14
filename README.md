@@ -20,4 +20,4 @@ Ting som mangler:
 - Laste inn deltakere fra CSV/XLSX
 - Statistikk-side
 - Endre rekkefølge på innlegg (gjerne drag&drop)
-- Templ til templating
+- ~~Templ til templating~~
